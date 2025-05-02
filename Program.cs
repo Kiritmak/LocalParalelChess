@@ -5,6 +5,16 @@ using ParalelLocalChess;
 
 namespace ParalelLocalChess
 {
+  public static class Extensions
+  {
+    public static string Reverso(this string s)
+    {
+      string r = "";
+      foreach (char c in s.Reverse()) r += c;
+      return r;
+    }
+  }
+
   public class Position
   {
     public Position(string s)
@@ -246,8 +256,9 @@ namespace ParalelLocalChess
 
             default: throw new NotImplementedException();
           }
+          view = blancas ? view : view.Reverso();
           view = $"| {view} ";
-          s+=(view);
+          s += view;
         }
         s+="|";
         showBoard.Add(s);
@@ -270,19 +281,22 @@ namespace ParalelLocalChess
         if (blancas) c++;
         else c--;
       }
-      showBoard.Add(s2);
-
-      for(int i=0; i<showBoard.Count; i++) 
+      int startIndex = blancas ? 0 : showBoard.Count-1;
+      int endIndex = blancas ? showBoard.Count - 1 : 0;
+      Func<int, int, bool> check = blancas ? (a, b) => { return a <= b; } : (a, b) => { return a >= b; };
+      for (int i=startIndex; check(i, endIndex); i+= blancas ? 1 : -1) 
       {
-        if (showBoard[i][0] != '-' && i!=showBoard.Count-1)
+        if (showBoard[i][0] != '-' && i!=endIndex)
         {
           Console.Write($"{line} ");
           line += blancas ? -1 : 1;
         }
-        
         else Console.Write("  ");
-        Console.WriteLine(showBoard[i]);
+        if(!blancas) Console.WriteLine(showBoard[i].Reverso());
+        else Console.WriteLine(showBoard[i]);
       }
+      Console.Write("  ");
+      Console.WriteLine(s2);
     }
     static void SaveChessBoard(ChessBoard chessBoard)
     {
