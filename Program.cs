@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Drawing;
 using System.Text;
+using ParalelLocalChess;
 
 namespace ParalelLocalChess
 {
@@ -18,7 +19,7 @@ namespace ParalelLocalChess
     }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
-    public int Row { get => Row-1;  }
+    public int Row { get => 7-(TextRow-1);  }
     public int Column { get => (int)(TextColumn - 'A'); }
 
     public char GetPieceAtPosition(ChessBoard chessBoard)
@@ -97,6 +98,7 @@ namespace ParalelLocalChess
     static void WelcomePlayer()
     {
       string? playerName = Thread.CurrentThread.Name;
+
       Console.WriteLine($"Welcome to Paralel Chess {playerName}!\nA game where you can play chess with your friend at separated windows in the same computer!\n");
       while (Exit())
       {
@@ -107,7 +109,7 @@ namespace ParalelLocalChess
         ColorSelection.WaitOne();
         List<string> text = File.ReadAllLines(ColorDataFilepath).ToList();
         string[] Blancas = text[0].Split(",");
-        if (Blancas.Length==1)
+        if (Blancas.Count() == 1 || Blancas[1] == playerName)
         {
           Blancas = ["Blancas", playerName] ;
           text[0] = $"Blancas, {playerName}";
@@ -210,7 +212,7 @@ namespace ParalelLocalChess
     static void showChessBoard(ChessBoard chessBoard, bool blancas)
     {
       List<string> showBoard = new List<string>();
-      int line = 1;
+      int line = 8;
 
       showBoard.Add("-------------------------------------------------");
       foreach (char[] chess in chessBoard)
@@ -223,6 +225,21 @@ namespace ParalelLocalChess
           {
             case 'B': view = "   "; break;
             case 'W': view = "///"; break;
+
+            case 'P': view = "BPw"; break;
+            case 'T': view = "BTw"; break;
+            case 'C': view = "BKn"; break;
+            case 'A': view = "BBs"; break;
+            case 'Q': view = "BQn"; break;
+            case 'K': view = "BKg"; break;
+
+            case 't': view = "WTw"; break;
+            case 'p': view = "WPw"; break;
+            case 'c': view = "WKn"; break;
+            case 'a': view = "WBs"; break;
+            case 'q': view = "WQn"; break;
+            case 'k': view = "WKg"; break;
+
             default: throw new NotImplementedException();
           }
           view = $"| {view} ";
@@ -240,7 +257,7 @@ namespace ParalelLocalChess
       {
         condition = (char c) => { return c >= 'A'; };
         colom = 'H';
-        line = 8;
+        line = 1;
       }
 
       for (char c = colom; condition(c);)
@@ -256,7 +273,7 @@ namespace ParalelLocalChess
         if (showBoard[i][0] != '-' && i!=showBoard.Count-1)
         {
           Console.Write($"{line} ");
-          line += blancas ? 1 : -1;
+          line += blancas ? -1 : 1;
         }
         
         else Console.Write("  ");
@@ -284,7 +301,7 @@ namespace ParalelLocalChess
         }
         catch
         {
-          Console.WriteLine("Incorrect Input");
+          Console.WriteLine("Invalid Input");
         }
       }
     }
@@ -295,6 +312,7 @@ namespace ParalelLocalChess
         for (int j = 0; j < 8; j++)
           board[i, j] = text[i][j];
     }
+
   }
 
 }
