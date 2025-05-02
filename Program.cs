@@ -1,5 +1,35 @@
-﻿namespace ParalelLocalChess
+﻿using System.Drawing;
+using System.Text;
+
+namespace ParalelLocalChess
 {
+  public class Position
+  {
+    public Position(string s)
+    {
+      if (string.IsNullOrEmpty(s) || s.Length != 2)
+        throw new ArgumentException();
+      s = s.ToUpper();
+      TextColumn = s[0];
+      TextRow = int.Parse(s.Substring(1));
+      if(Row < 0 ||  Row > 8) throw new ArgumentException();
+      if(TextColumn < 'A' || TextColumn > 'H' ) throw new ArgumentException();
+    }
+    public char TextColumn {  get; set; }
+    public int TextRow { get; set; }
+    public int Row { get => Row-1;  }
+    public int Column { get => (int)(TextColumn - 'A'); }
+
+    public char GetPieceAtPosition(List<string> chessBoard)
+    {
+      return chessBoard[Row][Column];
+    }
+    public void SetPieceAtPosition(char P, List<string> chessBoard)
+    {
+    }
+  }
+
+
   static class Program
   {
     static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
@@ -58,7 +88,7 @@
     static void Play(bool blancas)
     {
       string color = blancas ? "blancas" : "negras";
-
+      string[] Positions;
       List<string> chessBoard;
 
       while(true) 
@@ -74,7 +104,7 @@
         showChessBoard(chessBoard, blancas);
 
         Println(playerName, "Esta pensando... ");
-        Console.ReadLine();
+        ReadingPlayerInput(out Positions);
         //Leer el movimiento del jugador y, elejir si es valido o no
         //Transformar el tablero
         SaveChessBoard(chessBoard);
@@ -195,6 +225,18 @@
     static void SaveChessBoard(List<string> chessBoard)
     {
       File.WriteAllLines(chessBoardFilepath, chessBoard);
+    }
+    static void ReadingPlayerInput(out string[] Positions)
+    {
+      string moove = Console.ReadLine();
+      while(true)
+      {
+        if(string.IsNullOrEmpty(moove)) continue;
+        Positions = moove.Split("=>");
+        if (Positions.Count() != 2) continue;
+        if (Positions[0].Length != 2 || Positions[1].Length != 2) continue;
+        
+      }
     }
   }
 
