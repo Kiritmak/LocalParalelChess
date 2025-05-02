@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Collections;
+using System.Drawing;
 using System.Text;
 
 namespace ParalelLocalChess
@@ -20,22 +21,67 @@ namespace ParalelLocalChess
     public int Row { get => Row-1;  }
     public int Column { get => (int)(TextColumn - 'A'); }
 
-    public char GetPieceAtPosition(List<string> chessBoard)
+    public char GetPieceAtPosition(ChessBoard chessBoard)
     {
-      return chessBoard[Row][Column];
+      return chessBoard[Row, Column];
     }
-    public void SetPieceAtPosition(char P, List<string> chessBoard)
+    public void SetPieceAtPosition(char P, ChessBoard chessBoard)
     {
+      chessBoard[Row, Column] = P;
     }
   }
+
+  public class ChessBoard : IEnumerable<char[]>, IEnumerable
+  {
+    private List<char[]> chessBoard;
+    public ChessBoard()
+    {
+      chessBoard = new List<char[]>();
+      for(int i=0; i<8; i++)
+      {
+        char[] chars = new char[8];
+        for (int j = 0; j < 8; j++)
+        {
+          chars[j] = (i + j) % 2 == 0 ? 'W' : 'B';
+        }
+        chessBoard.Add(chars);
+      }
+    }
+    public char this[int row, int column]
+    {
+      get => chessBoard[row][column];
+      set => chessBoard[row][column] = value;
+    }
+
+    public IEnumerator<char[]> GetEnumerator()
+    {
+      foreach (char[] chars in chessBoard) yield return chars;
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+      return GetEnumerator();
+    }
+
+    public List<string> ToList()
+    {
+      List<string> list = new List<string>();
+      foreach(char[] chars in chessBoard)
+      {
+        string s = "";
+        foreach (char c in chars) s += c;
+        list.Add(s);
+      }
+      return list;
+    }
+  }
+
 
 
   static class Program
   {
     static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
     static string chessBoardFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ChessBoard.txt";
-    static object PlayerEnteringSala = new object();
-    static string[] players = new string[2];
     static string? playerName;
 
     private static Semaphore SalaDeEspera = new(2, 2, "SalaDeEspera");
@@ -89,17 +135,15 @@ namespace ParalelLocalChess
     {
       string color = blancas ? "blancas" : "negras";
       string[] Positions;
-      List<string> chessBoard;
+      ChessBoard chessBoard = new ChessBoard();
 
       while(true) 
       {
-
-
         Println(playerName, "Esperando para elejir...");
         game.WaitOne();
         Println(playerName, "Es tu turno");
 
-        chessBoard = File.ReadAllLines(chessBoardFilepath).ToList();
+        GetChessBoard(chessBoard);
         if (Win(blancas)!= -1) break;
         showChessBoard(chessBoard, blancas);
 
@@ -166,13 +210,13 @@ namespace ParalelLocalChess
       }
       return result;
     }
-    static void showChessBoard(List<string> chessBoard, bool blancas)
+    static void showChessBoard(ChessBoard chessBoard, bool blancas)
     {
       List<string> showBoard = new List<string>();
       int line = 1;
 
       showBoard.Add("-------------------------------------------------");
-      foreach (string chess in chessBoard)
+      foreach (char[] chess in chessBoard)
       {
         string s = "";
         foreach (char c in chess)
@@ -222,9 +266,9 @@ namespace ParalelLocalChess
         Console.WriteLine(showBoard[i]);
       }
     }
-    static void SaveChessBoard(List<string> chessBoard)
+    static void SaveChessBoard(ChessBoard chessBoard)
     {
-      File.WriteAllLines(chessBoardFilepath, chessBoard);
+      File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
     }
     static void ReadingPlayerInput(out string[] Positions)
     {
@@ -237,6 +281,13 @@ namespace ParalelLocalChess
         if (Positions[0].Length != 2 || Positions[1].Length != 2) continue;
         
       }
+    }
+    static void GetChessBoard(ChessBoard board)
+    {
+      List<string> text = File.ReadAllLines(chessBoardFilepath).ToList();
+      for(int i=0; i<8; i++)
+        for (int j = 0; j < 8; j++)
+          board[i, j] = text[i][j];
     }
   }
 
