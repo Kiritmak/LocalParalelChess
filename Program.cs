@@ -14,7 +14,7 @@ namespace ParalelLocalChess
       s = s.ToUpper();
       TextColumn = s[0];
       TextRow = int.Parse(s.Substring(1));
-      if(Row < 0 ||  Row > 8) throw new ArgumentException();
+      if(TextRow < 1 ||  TextRow > 8) throw new ArgumentException();
       if(TextColumn < 'A' || TextColumn > 'H' ) throw new ArgumentException();
     }
     public char TextColumn {  get; set; }
@@ -112,12 +112,12 @@ namespace ParalelLocalChess
         if (Blancas.Count() == 1 || Blancas[1] == playerName)
         {
           Blancas = ["Blancas", playerName] ;
-          text[0] = $"Blancas, {playerName}";
+          text[0] = $"Blancas,{playerName}";
           File.WriteAllLines(ColorDataFilepath, text);
         }
         else
         {
-          text[1] = $"Negras, {playerName}";
+          text[1] = $"Negras,{playerName}";
           File.WriteAllLines(ColorDataFilepath, text);
         }
         Println(playerName, "Ha elejido un color");
