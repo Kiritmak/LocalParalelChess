@@ -24,11 +24,17 @@ namespace ParalelLocalChess
 
     public char GetPieceAtPosition(ChessBoard chessBoard)
     {
-      return chessBoard[Row, Column];
+      char r = chessBoard[Row, Column];
+      if (r == 'W' || r == 'B') return '?';
+      return r;
     }
     public void SetPieceAtPosition(char P, ChessBoard chessBoard)
     {
       chessBoard[Row, Column] = P;
+    }
+    public override string ToString()
+    {
+      return $"{TextColumn}{TextRow}: {Row};{Column}";
     }
   }
 
@@ -88,7 +94,6 @@ namespace ParalelLocalChess
     private static Mutex ColorSelection = new(false, "Color");
     static void Main(string[] args)
     {
-      //args = new string[1] {"Kiritmak"};
       Thread MainThread = new(new ThreadStart(WelcomePlayer));
       MainThread.Name = args[0];
       playerName = MainThread.Name;
@@ -130,7 +135,6 @@ namespace ParalelLocalChess
         SalaDeEspera.Release();
       }
     }
-
     static void Play(bool blancas)
     {
       string color = blancas ? "blancas" : "negras";
@@ -144,11 +148,11 @@ namespace ParalelLocalChess
         Println(playerName, "Es tu turno");
 
         GetChessBoard(chessBoard);
-        if (Win(blancas)!= -1) break;
+        if (Win(blancas)!= -1) break; //Comprobando si esta en jaque mate algun rey
         showChessBoard(chessBoard, blancas);
 
         Println(playerName, "Esta pensando... ");
-        ReadingPlayerInput(positions); //Leer el movimiento del jugador y, elejir si es valido o no
+        ReadingPlayerInput(chessBoard, positions, blancas); //Leer el movimiento del jugador y, elejir si es valido o no
         //Transformar el tablero
         SaveChessBoard(chessBoard);
         Println(playerName, "Ha elejido un movimiento");
@@ -284,7 +288,7 @@ namespace ParalelLocalChess
     {
       File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
     }
-    static void ReadingPlayerInput(Position[] positions)
+    static void ReadingPlayerInput(ChessBoard chessBoard, Position[] positions, bool blancas)
     {
       while (true)
       {
@@ -296,7 +300,9 @@ namespace ParalelLocalChess
           positions[0] = new Position(Positions[0]);
           positions[1] = new Position(Positions[1]);
 
-          //Comprobar que dicha Transformacion es un movimiento legal
+          char pieza = positions[0].GetPieceAtPosition(chessBoard);
+          if (pieza == '?') throw new Exception();
+          if((blancas && char.IsAsciiLetterUpper(pieza) ) || (char.IsAsciiLetterLower(pieza) && !blancas)) throw new Exception();
           break;
         }
         catch
@@ -312,7 +318,6 @@ namespace ParalelLocalChess
         for (int j = 0; j < 8; j++)
           board[i, j] = text[i][j];
     }
-
   }
 
 }
