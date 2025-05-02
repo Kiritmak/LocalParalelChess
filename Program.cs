@@ -76,8 +76,6 @@ namespace ParalelLocalChess
     }
   }
 
-
-
   static class Program
   {
     static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
@@ -134,7 +132,7 @@ namespace ParalelLocalChess
     static void Play(bool blancas)
     {
       string color = blancas ? "blancas" : "negras";
-      string[] Positions;
+      Position[] positions = new Position[2];
       ChessBoard chessBoard = new ChessBoard();
 
       while(true) 
@@ -148,8 +146,7 @@ namespace ParalelLocalChess
         showChessBoard(chessBoard, blancas);
 
         Println(playerName, "Esta pensando... ");
-        ReadingPlayerInput(out Positions);
-        //Leer el movimiento del jugador y, elejir si es valido o no
+        ReadingPlayerInput(positions); //Leer el movimiento del jugador y, elejir si es valido o no
         //Transformar el tablero
         SaveChessBoard(chessBoard);
         Println(playerName, "Ha elejido un movimiento");
@@ -270,16 +267,25 @@ namespace ParalelLocalChess
     {
       File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
     }
-    static void ReadingPlayerInput(out string[] Positions)
+    static void ReadingPlayerInput(Position[] positions)
     {
-      string moove = Console.ReadLine();
-      while(true)
+      while (true)
       {
-        if(string.IsNullOrEmpty(moove)) continue;
-        Positions = moove.Split("=>");
-        if (Positions.Count() != 2) continue;
-        if (Positions[0].Length != 2 || Positions[1].Length != 2) continue;
-        
+        try
+        {
+          string moove = Console.ReadLine();
+          string[] Positions = moove.Split("=>");
+          if (Positions.Count() != 2) throw new Exception();
+          positions[0] = new Position(Positions[0]);
+          positions[1] = new Position(Positions[1]);
+
+          //Comprobar que dicha Transformacion es un movimiento legal
+          break;
+        }
+        catch
+        {
+          Console.WriteLine("Incorrect Input");
+        }
       }
     }
     static void GetChessBoard(ChessBoard board)
