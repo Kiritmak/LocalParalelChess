@@ -74,10 +74,10 @@
         showChessBoard(chessBoard, blancas);
 
         Println(playerName, "Esta pensando... ");
-        Console.ReadLine(); 
+        Console.ReadLine();
         //Leer el movimiento del jugador y, elejir si es valido o no
         //Transformar el tablero
-        //Guardar la posicion
+        SaveChessBoard(chessBoard);
         Println(playerName, "Ha elejido un movimiento");
 
         game.ReleaseMutex();
@@ -191,6 +191,10 @@
         else Console.Write("  ");
         Console.WriteLine(showBoard[i]);
       }
+    }
+    static void SaveChessBoard(List<string> chessBoard)
+    {
+      File.WriteAllLines(chessBoardFilepath, chessBoard);
     }
   }
 
