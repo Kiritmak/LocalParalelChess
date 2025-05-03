@@ -98,7 +98,7 @@ namespace ParalelLocalChess
             {
               Console.WriteLine("El peon se ha pasado");
               newPos1.SetPieceAtPosition(passedC, chessBoard);
-              return 1;
+              return -1;
             }
           }
           catch { }
@@ -153,6 +153,7 @@ namespace ParalelLocalChess
               Position newPos = new(s);
               Console.WriteLine(newPos);
               if (newPos.Equals(target)) return 1;
+              else if (newPos.GetPieceAtPosition(chessBoard) != '?') break;
               k++;
             }
             catch { break; }
@@ -453,6 +454,9 @@ namespace ParalelLocalChess
           //Valida que un jugador escoja la pieza de su color
           if((blancas && char.IsAsciiLetterUpper(pieza) ) || (char.IsAsciiLetterLower(pieza) && !blancas)) throw new Exception();
           Console.WriteLine("Pasa la barrera del color");
+
+          //Valida que sean posiciones diferentes
+          if (positions[0].Equals(positions[1])) throw new Exception();
 
           //Valida que, de haber una pieza en la siguiente posicion, que sea una de diferente color 
           if ((char.IsAsciiLetterLower(nextPos) == char.IsAsciiLetterLower(pieza)) && !char.IsPunctuation(nextPos)) throw new Exception();
