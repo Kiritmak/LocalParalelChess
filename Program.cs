@@ -39,7 +39,7 @@ namespace ParalelLocalChess
       DeltaPiece['P'] = new int[2, 4] { { -1, -2, -1, -1 }, {0, 0, 1, -1} };
     }
 
-    public char Color { get => (Row + Column) % 2 == 0 ? 'W' : 'B'; }
+    public char Color { get => ((Row + Column) % 2 == 0 ? 'B' : 'W'); }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
     public int Row { get => 7-(TextRow-1);  }
@@ -554,7 +554,7 @@ namespace ParalelLocalChess
         for(int j = 0;j < 8; j++)
           if(board[i, j] == target)
           {
-            board[i, j] = (i+j)%2==0 ? 'W' : 'B';
+            board[i, j] = (i+j)%2==0 ? 'B' : 'W';
             SaveChessBoard (board);
             return;
           }
@@ -627,6 +627,49 @@ namespace ParalelLocalChess
         }
         catch { }
       }
+
+      //Buscando si el alfil o la torre pueden atacar al rey
+      for(int i=0; i<4; i++)
+      {
+        int atkRow = Row;
+        int atkCol = Col;
+        char atkBishop = blancas ? 'A' : 'a';
+        char atkRook = blancas ? 'T' : 't';
+
+        int k = 1;
+        while(true)
+        {
+          try
+          {
+            atkRow = Row + DeltaPiece['A'][0, i]*k;
+            atkCol = Col + DeltaPiece['A'][1, i]*k;
+            if (chessBoard[atkRow, atkCol] == atkBishop) return true;
+            if (chessBoard[atkRow, atkCol] != ((atkCol + atkRow) % 2 == 0 ? 'W' : 'B')) break;
+            k++;
+          }
+          catch
+          {
+            break;
+          }
+        }
+        k = 1;
+        while(true)
+        {
+          try
+          {
+            atkRow = Row + DeltaPiece['T'][0, i] * k;
+            atkCol = Col + DeltaPiece['T'][1, i] * k;
+            if (chessBoard[atkRow, atkCol] == atkRook) return true;
+            if (chessBoard[atkRow, atkCol] != ((atkCol + atkRow) % 2 == 0 ? 'W' : 'B')) break;
+            k++;
+          }
+          catch
+          {
+            break;
+          }
+        }
+      }
+
 
       return false;
     }
