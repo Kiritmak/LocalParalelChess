@@ -1,2 +1,2 @@
-Blancas,Kiritmak
-Negras,Ian
+Blancas
+Negras

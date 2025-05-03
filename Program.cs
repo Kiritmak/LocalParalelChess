@@ -643,8 +643,9 @@ namespace ParalelLocalChess
           {
             atkRow = Row + DeltaPiece['A'][0, i]*k;
             atkCol = Col + DeltaPiece['A'][1, i]*k;
+            Position pos = new(GetFormat(atkRow, atkCol));
             if (chessBoard[atkRow, atkCol] == atkBishop) return true;
-            if (chessBoard[atkRow, atkCol] != ((atkCol + atkRow) % 2 == 0 ? 'W' : 'B')) break;
+            if (chessBoard[atkRow, atkCol] != pos.Color) break;
             k++;
           }
           catch
@@ -659,8 +660,9 @@ namespace ParalelLocalChess
           {
             atkRow = Row + DeltaPiece['T'][0, i] * k;
             atkCol = Col + DeltaPiece['T'][1, i] * k;
+            Position pos = new(GetFormat(atkRow, atkCol));
             if (chessBoard[atkRow, atkCol] == atkRook) return true;
-            if (chessBoard[atkRow, atkCol] != ((atkCol + atkRow) % 2 == 0 ? 'W' : 'B')) break;
+            if (chessBoard[atkRow, atkCol] != pos.Color) break;
             k++;
           }
           catch
