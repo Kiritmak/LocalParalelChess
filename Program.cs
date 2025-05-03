@@ -38,6 +38,8 @@ namespace ParalelLocalChess
       DeltaPiece['C'] = new int[2, 8] { { -2, -1, 1, 2, 2, 1, -1, -2 }, {1, 2, 2, 1, -1, -2, -2, -1} };
       DeltaPiece['P'] = new int[2, 4] { { -1, -2, -1, -1 }, {0, 0, 1, -1} };
     }
+
+    public char Color { get => (Row + Column) % 2 == 0 ? 'W' : 'B'; }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
     public int Row { get => 7-(TextRow-1);  }
@@ -53,7 +55,7 @@ namespace ParalelLocalChess
     {
       chessBoard[Row, Column] = P;
     }
-    public bool CanMooveTo(Position target, ChessBoard chessBoard)
+    public int CanMooveTo(Position target, ChessBoard chessBoard)
     {
       char pieza = this.GetPieceAtPosition(chessBoard);
       if(char.ToLower(pieza) == 'p')
@@ -66,19 +68,39 @@ namespace ParalelLocalChess
         string s;
 
         //Avanzar una casilla
-        newRow = Row + DeltaPiece[pieza][0, 0] * mult;
-        newColumn = Column + DeltaPiece[pieza][1, 0] * mult;
-        s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
-        try { if (target.Equals(new Position(s))) return true; }
-        catch { }
+        if(target.GetPieceAtPosition(chessBoard) == '?')
+        {
+          newRow = Row + DeltaPiece[pieza][0, 0] * mult;
+          newColumn = Column + DeltaPiece[pieza][1, 0] * mult;
+          s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+          try { if (target.Equals(new Position(s))) return 1; }
+          catch { }
+        }
 
         //Avanzar dos casillas
         if ( (mult == 1 && this.TextRow == 2) || (mult==-1 && this.TextRow == 7))
         {
-          newRow = Row + DeltaPiece[pieza][0, 1] * mult;
-          newColumn = Column + DeltaPiece[pieza][1, 1] * mult;
-          s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
-          try { if (target.Equals(new Position(s))) return true; }
+          Console.WriteLine("Peon se quiere mover dos casillas");
+          try 
+          {
+            char passedC = mult == 1 ? 'x' : 'X';
+
+            newRow = Row + (-1) * mult;
+            newColumn = Column;
+            s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+            Position newPos1 = new Position(s);
+
+            newRow += (-1) * mult;
+            s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+            Position newPos2 = new Position(s);
+
+            if(newPos1.GetPieceAtPosition(chessBoard) == '?' && target.Equals(newPos2))
+            {
+              Console.WriteLine("El peon se ha pasado");
+              newPos1.SetPieceAtPosition(passedC, chessBoard);
+              return 1;
+            }
+          }
           catch { }
         }
 
@@ -92,7 +114,7 @@ namespace ParalelLocalChess
             s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
 
             Position newPos = new(s);
-            if (target.Equals(newPos) && newPos.GetPieceAtPosition(chessBoard) != '?') return true;
+            if (target.Equals(newPos) && newPos.GetPieceAtPosition(chessBoard) != '?') return 1;
           }
           catch { }
         }
@@ -109,7 +131,7 @@ namespace ParalelLocalChess
           try
           { 
             Position newPos = new(s);
-            if(newPos.Equals(target)) return true;
+            if(newPos.Equals(target)) return 1;
           }
           catch {}
         }
@@ -130,7 +152,7 @@ namespace ParalelLocalChess
             {
               Position newPos = new(s);
               Console.WriteLine(newPos);
-              if (newPos.Equals(target)) return true;
+              if (newPos.Equals(target)) return 1;
               k++;
             }
             catch { break; }
@@ -138,7 +160,7 @@ namespace ParalelLocalChess
         }
       }
 
-      return false;
+      return 0;
     }
     public override string ToString()
     {
@@ -202,6 +224,7 @@ namespace ParalelLocalChess
     static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
     static string chessBoardFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ChessBoard.txt";
     static string? playerName;
+    static bool hasAPassedPawn = false;
 
     private static Semaphore SalaDeEspera = new(2, 2, "SalaDeEspera");
     private static Mutex game = new(false, "ChessGame");
@@ -261,6 +284,7 @@ namespace ParalelLocalChess
         game.WaitOne();
         Println(playerName, "Es tu turno");
 
+        if(hasAPassedPawn) RemovePassedPawn(blancas);
         GetChessBoard(chessBoard);
         if (Win(blancas)!= -1) break; //Comprobando si esta en jaque mate algun rey
         showChessBoard(chessBoard, blancas);
@@ -350,6 +374,7 @@ namespace ParalelLocalChess
             case 'A': view = "BBs"; break;
             case 'Q': view = "BQn"; break;
             case 'K': view = "BKg"; break;
+            case 'X': view = "BPP"; break; 
 
             case 't': view = "WTw"; break;
             case 'p': view = "WPw"; break;
@@ -357,6 +382,7 @@ namespace ParalelLocalChess
             case 'a': view = "WBs"; break;
             case 'q': view = "WQn"; break;
             case 'k': view = "WKg"; break;
+            case 'x': view = "WPP"; break;
 
             default: throw new NotImplementedException();
           }
@@ -421,7 +447,7 @@ namespace ParalelLocalChess
           char pieza = positions[0].GetPieceAtPosition(chessBoard);
           char nextPos = positions[1].GetPieceAtPosition(chessBoard);
 
-          if (pieza == '?') throw new Exception(); //Valida que haya una pieza en la primera posicion
+          if (pieza == '?' || char.ToLower(pieza) == 'x') throw new Exception(); //Valida que haya una pieza en la primera posicion
           Console.WriteLine("Pasa la barrera de la existencia");
 
           //Valida que un jugador escoja la pieza de su color
@@ -432,8 +458,21 @@ namespace ParalelLocalChess
           if ((char.IsAsciiLetterLower(nextPos) == char.IsAsciiLetterLower(pieza)) && !char.IsPunctuation(nextPos)) throw new Exception();
           Console.WriteLine("Pasa la barrera del ataque");
 
-          if (!positions[0].CanMooveTo(positions[1], chessBoard)) throw new Exception();
+          int r = positions[0].CanMooveTo(positions[1], chessBoard);
+          if (r ==0 ) throw new Exception();
+          if (r == -1) hasAPassedPawn = true; //Comprueba si hay un peon pasado
           Console.WriteLine("El movimiento es valido");
+
+          if(char.ToLower(pieza)=='p')
+          {
+            char OtherPieza = positions[1].GetPieceAtPosition(chessBoard);
+            if(char.ToLower(OtherPieza) == 'x')
+            {
+              chessBoard[blancas ? 3 : 4, positions[1].Column] = ((blancas ? 3 : 4) + positions[1].Column) % 2 == 0 ? 'W' : 'B';
+            }
+          }
+          positions[0].SetPieceAtPosition(positions[0].Color, chessBoard);
+          positions[1].SetPieceAtPosition(pieza, chessBoard);
           break;
         }
         catch
@@ -448,6 +487,23 @@ namespace ParalelLocalChess
       for(int i=0; i<8; i++)
         for (int j = 0; j < 8; j++)
           board[i, j] = text[i][j];
+    }
+    static void RemovePassedPawn(bool blancas)
+    {
+      hasAPassedPawn = false;
+      ChessBoard board = new ChessBoard();
+      char target = blancas ? 'x' : 'X';
+      GetChessBoard (board);
+      for(int i=0; i<8; ++i)
+      {
+        for(int j = 0;j < 8; j++)
+          if(board[i, j] == target)
+          {
+            board[i, j] = (i+j)%2==0 ? 'W' : 'B';
+            SaveChessBoard (board);
+            return;
+          }
+      }
     }
   }
 
