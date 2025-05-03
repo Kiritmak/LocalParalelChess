@@ -615,7 +615,18 @@ namespace ParalelLocalChess
         catch { }
       }
 
-
+      //Buscando si un peon puede atacar al rey
+      for(int i=1; i<=2; i++)
+      {
+        int atkRow = Row + DeltaPiece['P'][0, i + 1] * mult;
+        int atkCol = Col + DeltaPiece['P'][1, i + 1] * mult;
+        char atkPawn = blancas ? 'P' : 'p';
+        try
+        {
+          if (chessBoard[atkRow, atkCol] == atkPawn) return true;
+        }
+        catch { }
+      }
 
       return false;
     }
