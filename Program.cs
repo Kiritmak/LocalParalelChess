@@ -17,16 +17,28 @@ namespace ParalelLocalChess
 
   public class Position
   {
+    //DeltaPiece[<char>][<axis><ith moove>]
+    private Dictionary<char, int[,]> DeltaPiece = new Dictionary<char, int[,]>();
     public Position(string s)
     {
       if (string.IsNullOrEmpty(s) || s.Length != 2)
         throw new ArgumentException();
       s = s.ToUpper();
+
       TextColumn = s[0];
       TextRow = int.Parse(s.Substring(1));
+
       if(TextRow < 1 ||  TextRow > 8) throw new ArgumentException();
       if(TextColumn < 'A' || TextColumn > 'H' ) throw new ArgumentException();
+
+      DeltaPiece['K'] = new int[2, 8] { { -1, -1, 0, 1, 1, 1, 0, -1}, {0, 1, 1, 1, 0, -1, -1, -1} };
+      DeltaPiece['Q'] = DeltaPiece['K'];
+      DeltaPiece['A'] = new int[2, 4] { {-1, 1, 1, -1}, {1, 1, -1, -1} };
+      DeltaPiece['T'] = new int[2, 4] { { -1, 0, 1, 0 }, { 0, 1, 0, -1 } };
+      DeltaPiece['C'] = new int[2, 8] { { -2, -1, 1, 2, 2, 1, -1, -2 }, {1, 2, 2, 1, -1, -2, -2, -1} };
+      DeltaPiece['P'] = new int[2, 4] { { -1, -2, -1, -1 }, {0, 0, 1, -1} };
     }
+    public Position(int x, int y) : this($"{'A' + y}{x+1}") { }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
     public int Row { get => 7-(TextRow-1);  }
@@ -42,9 +54,57 @@ namespace ParalelLocalChess
     {
       chessBoard[Row, Column] = P;
     }
+    public bool CanMooveTo(Position target, ChessBoard chessBoard)
+    {
+      char pieza = this.GetPieceAtPosition(chessBoard);
+      if(char.ToLower(pieza) == 'p') return false;
+      else if(char.ToUpper(pieza) == 'K' || char.ToUpper(pieza) == 'C')
+      {
+        pieza = char.ToUpper(pieza);
+        for(int i=0; i < DeltaPiece[pieza].GetLength(1); i++)
+        {
+          try
+          {
+            Position newPos = new(Row + DeltaPiece[pieza][0, i], Column + DeltaPiece[pieza][1, i]);
+            if(newPos.Equals(target)) return true;
+          }
+          catch {}
+        }
+      }
+      else
+      {
+        pieza = char.ToUpper(pieza);
+        for (int i = 0; i < DeltaPiece[pieza].GetLength(1); i++)
+        {
+          int k = 1;
+          while (true)
+          {
+            try
+            {
+              int nextRow = Row + DeltaPiece[pieza][0, i];
+              int nextColumn = Column + DeltaPiece[pieza][1, i];
+              nextColumn *= k;
+              nextRow *= k;
+              Position newPos = new(nextRow, nextColumn);
+              if (newPos.Equals(target)) return true;
+              k++;
+            }
+            catch { break; }
+          }
+        }
+      }
+
+      return false;
+    }
     public override string ToString()
     {
       return $"{TextColumn}{TextRow}: {Row};{Column}";
+    }
+    public override bool Equals(object? obj)
+    {
+      Position? other= obj as Position;
+      if (other == null) throw new ArgumentNullException();
+      return (this.Row == other.Row && this.Column == other.Column) ;
     }
   }
 
@@ -315,8 +375,19 @@ namespace ParalelLocalChess
           positions[1] = new Position(Positions[1]);
 
           char pieza = positions[0].GetPieceAtPosition(chessBoard);
-          if (pieza == '?') throw new Exception();
+          char nextPos = positions[1].GetPieceAtPosition(chessBoard);
+
+          if (pieza == '?') throw new Exception(); //Valida que haya una pieza en la primera posicion
+          Console.WriteLine("Pasa la barrera de la existencia");
+
+          //Valida que un jugador escoja la pieza de su color
           if((blancas && char.IsAsciiLetterUpper(pieza) ) || (char.IsAsciiLetterLower(pieza) && !blancas)) throw new Exception();
+
+          //Valida que, de haber una pieza en la siguiente posicion, que sea una de diferente color 
+          if((char.IsAsciiLetterLower(nextPos) == char.IsAsciiLetterLower(pieza)) && !char.IsPunctuation(nextPos)) throw new Exception();
+
+          if (!positions[0].CanMooveTo(positions[1], chessBoard)) throw new Exception();
+          Console.WriteLine("El movimiento es valido");
           break;
         }
         catch
