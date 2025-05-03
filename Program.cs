@@ -18,7 +18,7 @@ namespace ParalelLocalChess
   public class Position
   {
     //DeltaPiece[<char>][<axis><ith moove>]
-    private Dictionary<char, int[,]> DeltaPiece = new Dictionary<char, int[,]>();
+    public Dictionary<char, int[,]> DeltaPiece = new Dictionary<char, int[,]>();
     public Position(string s)
     {
       if (string.IsNullOrEmpty(s) || s.Length != 2)
@@ -181,7 +181,9 @@ namespace ParalelLocalChess
     public ChessBoard()
     {
       chessBoard = new List<char[]>();
-      for(int i=0; i<8; i++)
+      chessBoard.Add(['T', 'C','A','Q', 'K', 'A', 'C', 'T']);
+      chessBoard.Add(['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P']);
+      for(int i=3; i<=6; i++)
       {
         char[] chars = new char[8];
         for (int j = 0; j < 8; j++)
@@ -190,6 +192,8 @@ namespace ParalelLocalChess
         }
         chessBoard.Add(chars);
       }
+      chessBoard.Add(['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p']);
+      chessBoard.Add(['t', 'c', 'a', 'q', 'k', 'a', 'c', 't']);
     }
     public char this[int row, int column]
     {
@@ -218,10 +222,20 @@ namespace ParalelLocalChess
       }
       return list;
     }
+    public ChessBoard Clone()
+    {
+      ChessBoard result = new ChessBoard();
+      for (int i = 0; i < 8; i++)
+        for (int j = 0; j < 8; j++)
+          result[i, j] = this[i, j];
+      return result;
+    }
   }
 
   static class Program
   {
+    static Dictionary<string, Func<ChessBoard, int>> SpecialComands = new();
+
     static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
     static string chessBoardFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ChessBoard.txt";
     static string? playerName;
@@ -232,6 +246,17 @@ namespace ParalelLocalChess
     private static Mutex ColorSelection = new(false, "Color");
     static void Main(string[] args)
     {
+      SpecialComands["close"] = (chessBoard) =>
+      {
+        SaveChessBoard(chessBoard);
+        return -1;
+      };
+      SpecialComands["reset"] = (chessBoard) =>
+      {
+        chessBoard = new();
+        return SpecialComands["close"](chessBoard);
+      };
+
       Thread MainThread = new(new ThreadStart(WelcomePlayer));
       MainThread.Name = args[0];
       playerName = MainThread.Name;
@@ -287,13 +312,22 @@ namespace ParalelLocalChess
 
         if(hasAPassedPawn) RemovePassedPawn(blancas);
         GetChessBoard(chessBoard);
-        if (Win(blancas)!= -1) break; //Comprobando si esta en jaque mate algun rey
+        if (Win(blancas) != -1) //Comprobando si esta en jaque mate algun rey
+        {
+          game.ReleaseMutex();
+          break; 
+        }
         showChessBoard(chessBoard, blancas);
 
         Println(playerName, "Esta pensando... ");
-        ReadingPlayerInput(chessBoard, positions, blancas); //Leer el movimiento del jugador y, elejir si es valido o no
-        //Transformar el tablero
-        SaveChessBoard(chessBoard);
+        if (ReadingPlayerInput(chessBoard, positions, blancas) == -1) //Leer el movimiento del jugador y, elejir si es valido o no
+        {
+          game.ReleaseMutex();
+          break;
+        }
+
+        SaveChessBoard(chessBoard);//Transformar el tablero
+
         Println(playerName, "Ha elejido un movimiento");
 
         game.ReleaseMutex();
@@ -327,18 +361,8 @@ namespace ParalelLocalChess
       int result = -1;
       if(result!=-1) //Reseting the board to original state
       {
-        List<string> chessBoard = new List<string>();
-        for (int i = 0; i < 8; i++)
-        {
-          string line = "";
-          for (int j = 0; j < 8; j++)
-          {
-            if ((i + j) % 2 == 0) line += "W";
-            else line += "B";
-          }
-          chessBoard.Add(line);
-        }
-        File.WriteAllLines(chessBoardFilepath, chessBoard);
+        ChessBoard chessBoard = new();
+        File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
       }
       if (result == 0) //Ganan las blancas
       {
@@ -433,13 +457,18 @@ namespace ParalelLocalChess
     {
       File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
     }
-    static void ReadingPlayerInput(ChessBoard chessBoard, Position[] positions, bool blancas)
+    static int ReadingPlayerInput(ChessBoard chessBoard, Position[] positions, bool blancas)
     {
       while (true)
       {
         try
         {
+          ChessBoard aux = chessBoard.Clone();
           string moove = Console.ReadLine();
+          if(SpecialComands.ContainsKey(moove.ToLower()))
+          {
+            return SpecialComands[moove.ToLower()](chessBoard);
+          }
           string[] Positions = moove.Split("=>");
           if (Positions.Count() != 2) throw new Exception();
           positions[0] = new Position(Positions[0]);
@@ -465,7 +494,6 @@ namespace ParalelLocalChess
           int r = positions[0].CanMooveTo(positions[1], chessBoard);
           if (r ==0 ) throw new Exception();
           if (r == -1) hasAPassedPawn = true; //Comprueba si hay un peon pasado
-          Console.WriteLine("El movimiento es valido");
 
           if(char.ToLower(pieza)=='p')
           {
@@ -479,9 +507,26 @@ namespace ParalelLocalChess
               Position piecePos = new(GetFormat(pieceRow, pieceColumn));
               piecePos.SetPieceAtPosition(piecePos.Color, chessBoard);
             }
+            if (positions[1].Row == (blancas ? 0 : 7))
+            {
+              Console.WriteLine("El peon se ha convertido en reina");
+              if (blancas) pieza = 'q';
+              else pieza = 'Q';
+            }
           }
           positions[0].SetPieceAtPosition(positions[0].Color, chessBoard);
           positions[1].SetPieceAtPosition(pieza, chessBoard);
+
+          //Check if king is checked after the moove
+          if(KingIsChecked(blancas, chessBoard))
+          {
+            Console.WriteLine("El rey no puede quedar al descubierto");
+            chessBoard = aux.Clone();
+            throw new Exception();
+          }
+
+          Console.WriteLine("El movimiento es valido");
+
           break;
         }
         catch
@@ -489,6 +534,7 @@ namespace ParalelLocalChess
           Console.WriteLine("Invalid Input");
         }
       }
+      return 1;
     }
     static void GetChessBoard(ChessBoard board)
     {
@@ -517,6 +563,61 @@ namespace ParalelLocalChess
     static string GetFormat(int Row, int Col)
     {
       return $"{(char)('A' + Col)}{7 - Row + 1}";
+    }
+    static bool KingIsChecked(bool blancas, ChessBoard chessBoard)
+    {
+      char King = blancas ? 'k' : 'K';
+      int Row=0, Col=0, mult = blancas ? 1 : -1;
+      Position dummy = new(GetFormat(Row, Col));
+      var DeltaPiece = dummy.DeltaPiece;
+
+      //Buscando la posicion del rey
+      for(int i=0; i<8; i++)
+      {
+        for(int j=0; j<8; j++)
+        {
+          Position pos = new(GetFormat(i, j));
+          char c = pos.GetPieceAtPosition(chessBoard);
+          if(King== c)
+          {
+            Row = i;
+            Col = j;
+            i = 8;
+            break;
+          }
+        }
+      }
+
+      //Buscando algun Caballo o Rey que lo ataque
+      for(int i=0; i<8; i++)
+      {
+        int atkRow = Row;
+        int atkCol = Col;
+        char atkKnight = blancas ? 'C' : 'c';
+        char atkKing = blancas ? 'K' : 'k';
+
+        //Caballo atacante
+        atkRow = Row + DeltaPiece['C'][0, i];
+        atkCol = Col + DeltaPiece['C'][1, i];
+        try
+        {
+          if (chessBoard[atkRow, atkCol] == atkKnight) return true;
+        }
+        catch { }
+
+        //Rey atacante
+        atkRow = Row + DeltaPiece['K'][0, i];
+        atkCol = Col + DeltaPiece['K'][1, i];
+        try
+        {
+          if (chessBoard[atkRow, atkCol] == atkKing) return true;
+        }
+        catch { }
+      }
+
+
+
+      return false;
     }
   }
 
