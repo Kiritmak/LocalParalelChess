@@ -672,6 +672,31 @@ namespace ParalelLocalChess
         }
       }
 
+      //Buscando si una dama puede atacar al rey
+      for(int i=0; i<8; i++)
+      {
+        int atkRow = Row;
+        int atkCol = Col;
+        char atkQueen = blancas ? 'Q' : 'q';
+
+        int k = 1;
+        while (true)
+        {
+          try
+          {
+            atkRow = Row + DeltaPiece['Q'][0, i] * k;
+            atkCol = Col + DeltaPiece['Q'][1, i] * k;
+            Position pos = new(GetFormat(atkRow, atkCol));
+            if (chessBoard[atkRow, atkCol] == atkQueen) return true;
+            if (chessBoard[atkRow, atkCol] != pos.Color) break;
+            k++;
+          }
+          catch
+          {
+            break;
+          }
+        }
+      }
 
       return false;
     }
