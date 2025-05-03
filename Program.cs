@@ -469,10 +469,15 @@ namespace ParalelLocalChess
 
           if(char.ToLower(pieza)=='p')
           {
+            Console.WriteLine("Se movio un peon");
             char OtherPieza = positions[1].GetPieceAtPosition(chessBoard);
             if(char.ToLower(OtherPieza) == 'x')
             {
-              chessBoard[blancas ? 3 : 4, positions[1].Column] = ((blancas ? 3 : 4) + positions[1].Column) % 2 == 0 ? 'W' : 'B';
+              Console.WriteLine("El peon ataco a un peon pasado");
+              int pieceRow = positions[1].Row + (blancas ? 1 : -1);
+              int pieceColumn = positions[1].Column;
+              Position piecePos = new(GetFormat(pieceRow, pieceColumn));
+              piecePos.SetPieceAtPosition(piecePos.Color, chessBoard);
             }
           }
           positions[0].SetPieceAtPosition(positions[0].Color, chessBoard);
@@ -508,6 +513,10 @@ namespace ParalelLocalChess
             return;
           }
       }
+    }
+    static string GetFormat(int Row, int Col)
+    {
+      return $"{(char)('A' + Col)}{7 - Row + 1}";
     }
   }
 
