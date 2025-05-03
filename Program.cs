@@ -56,7 +56,48 @@ namespace ParalelLocalChess
     public bool CanMooveTo(Position target, ChessBoard chessBoard)
     {
       char pieza = this.GetPieceAtPosition(chessBoard);
-      if(char.ToLower(pieza) == 'p') return false;
+      if(char.ToLower(pieza) == 'p')
+      {
+
+        int mult = pieza == 'p' ? 1 : -1;
+        int newRow;
+        int newColumn;
+        pieza = char.ToUpper(pieza);
+        string s;
+
+        //Avanzar una casilla
+        newRow = Row + DeltaPiece[pieza][0, 0] * mult;
+        newColumn = Column + DeltaPiece[pieza][1, 0] * mult;
+        s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+        try { if (target.Equals(new Position(s))) return true; }
+        catch { }
+
+        //Avanzar dos casillas
+        if ( (mult == 1 && this.TextRow == 2) || (mult==-1 && this.TextRow == 7))
+        {
+          newRow = Row + DeltaPiece[pieza][0, 1] * mult;
+          newColumn = Column + DeltaPiece[pieza][1, 1] * mult;
+          s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+          try { if (target.Equals(new Position(s))) return true; }
+          catch { }
+        }
+
+        //Capturar alguna pieza
+        for(int i=1; i<=2; i++)
+        {
+          try
+          {
+            newRow = Row + DeltaPiece[pieza][0, i + 1] * mult;
+            newColumn = Column + DeltaPiece[pieza][1, i + 1] * mult;
+            s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
+
+            Position newPos = new(s);
+            if (target.Equals(newPos) && newPos.GetPieceAtPosition(chessBoard) != '?') return true;
+          }
+          catch { }
+        }
+
+      }
       else if(char.ToUpper(pieza) == 'K' || char.ToUpper(pieza) == 'C')
       {
         pieza = char.ToUpper(pieza);
