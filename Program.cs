@@ -38,7 +38,6 @@ namespace ParalelLocalChess
       DeltaPiece['C'] = new int[2, 8] { { -2, -1, 1, 2, 2, 1, -1, -2 }, {1, 2, 2, 1, -1, -2, -2, -1} };
       DeltaPiece['P'] = new int[2, 4] { { -1, -2, -1, -1 }, {0, 0, 1, -1} };
     }
-    public Position(int x, int y) : this($"{'A' + y}{x+1}") { }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
     public int Row { get => 7-(TextRow-1);  }
@@ -63,9 +62,12 @@ namespace ParalelLocalChess
         pieza = char.ToUpper(pieza);
         for(int i=0; i < DeltaPiece[pieza].GetLength(1); i++)
         {
+          int newRow = Row + DeltaPiece[pieza][0, i];
+          int newColumn = Column + DeltaPiece[pieza][1, i];
+          string s = $"{(char)('A' + newColumn)}{7 - newRow+1}";
           try
-          {
-            Position newPos = new(Row + DeltaPiece[pieza][0, i], Column + DeltaPiece[pieza][1, i]);
+          { 
+            Position newPos = new(s);
             if(newPos.Equals(target)) return true;
           }
           catch {}
@@ -74,18 +76,19 @@ namespace ParalelLocalChess
       else
       {
         pieza = char.ToUpper(pieza);
+        Console.WriteLine($"Analizando {pieza}");
         for (int i = 0; i < DeltaPiece[pieza].GetLength(1); i++)
         {
           int k = 1;
           while (true)
           {
+            int newRow = Row + DeltaPiece[pieza][0, i]*k;
+            int newColumn = Column + DeltaPiece[pieza][1, i]*k;
+            string s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
             try
             {
-              int nextRow = Row + DeltaPiece[pieza][0, i];
-              int nextColumn = Column + DeltaPiece[pieza][1, i];
-              nextColumn *= k;
-              nextRow *= k;
-              Position newPos = new(nextRow, nextColumn);
+              Position newPos = new(s);
+              Console.WriteLine(newPos);
               if (newPos.Equals(target)) return true;
               k++;
             }
@@ -382,9 +385,11 @@ namespace ParalelLocalChess
 
           //Valida que un jugador escoja la pieza de su color
           if((blancas && char.IsAsciiLetterUpper(pieza) ) || (char.IsAsciiLetterLower(pieza) && !blancas)) throw new Exception();
+          Console.WriteLine("Pasa la barrera del color");
 
           //Valida que, de haber una pieza en la siguiente posicion, que sea una de diferente color 
-          if((char.IsAsciiLetterLower(nextPos) == char.IsAsciiLetterLower(pieza)) && !char.IsPunctuation(nextPos)) throw new Exception();
+          if ((char.IsAsciiLetterLower(nextPos) == char.IsAsciiLetterLower(pieza)) && !char.IsPunctuation(nextPos)) throw new Exception();
+          Console.WriteLine("Pasa la barrera del ataque");
 
           if (!positions[0].CanMooveTo(positions[1], chessBoard)) throw new Exception();
           Console.WriteLine("El movimiento es valido");
