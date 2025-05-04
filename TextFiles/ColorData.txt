@@ -1,2 +1,2 @@
-Blancas,Kiritmak
-Negras,1
+Blancas
+Negras

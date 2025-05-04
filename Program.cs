@@ -41,7 +41,7 @@ namespace ParalelLocalChess
       DeltaPiece['P'] = new int[2, 4] { { -1, -2, -1, -1 }, {0, 0, 1, -1} };
     }
 
-    public char Color { get => ((Row + Column) % 2 == 0 ? 'B' : 'W'); }
+    public char Color { get => ((Row + Column) % 2 == 0 ? 'W' : 'B'); }
     public char TextColumn {  get; set; }
     public int TextRow { get; set; }
     public int Row { get => 7-(TextRow-1);  }
@@ -410,9 +410,10 @@ namespace ParalelLocalChess
         game.WaitOne();
         Println(playerName, "Es tu turno");
 
-        CheckCastle(blancas, chessBoard); 
-        if(hasAPassedPawn) RemovePassedPawn(blancas);
+        if (hasAPassedPawn) RemovePassedPawn(blancas);
         GetChessBoard(chessBoard);
+        CheckCastle(blancas, chessBoard);
+        
         int w = Win(blancas, chessBoard);
         if ( w != -1) //Comprobando si esta en jaque mate algun rey
         {
@@ -428,8 +429,9 @@ namespace ParalelLocalChess
           game.ReleaseMutex();
           break;
         }
+        Console.Clear();
         showChessBoard(chessBoard, blancas);
-
+        
         Println(playerName, "Esta pensando... ");
         if (ReadingPlayerInput(chessBoard, positions, blancas) == -1) //Leer el movimiento del jugador y, elejir si es valido o no
         {
@@ -585,24 +587,20 @@ namespace ParalelLocalChess
       int line = 8;
 
       showBoard.Add("-------------------------------------------------");
-      foreach (char[] chess in chessBoard)
+      for(int i=0; i<8; i++)
       {
         string s = "";
-        foreach (char c in chess)
+        for(int j=0; j<8; j++)
         {
           string view;
-          switch (c)
+          switch (chessBoard[i, j])
           {
-            case 'B': view = "   "; break;
-            case 'W': view = "///"; break;
-
             case 'P': view = "BPw"; break;
             case 'T': view = "BTw"; break;
             case 'C': view = "BKn"; break;
             case 'A': view = "BBs"; break;
             case 'Q': view = "BQn"; break;
             case 'K': view = "BKg"; break;
-            case 'X': view = "BPP"; break; 
 
             case 't': view = "WTw"; break;
             case 'p': view = "WPw"; break;
@@ -610,9 +608,8 @@ namespace ParalelLocalChess
             case 'a': view = "WBs"; break;
             case 'q': view = "WQn"; break;
             case 'k': view = "WKg"; break;
-            case 'x': view = "WPP"; break;
 
-            default: throw new NotImplementedException();
+            default: view = (i + j) % 2 == 0 ? "///" : "   "; break; 
           }
           view = blancas ? view : view.Reverso();
           view = $"| {view} ";
@@ -1022,8 +1019,9 @@ namespace ParalelLocalChess
     {
       return c == '?' || char.ToLower(c) == 'x';
     }
-    static void CheckCastle(bool blancas, ChessBoard chessBoard)
+    static void CheckCastle(bool blancas, ChessBoard Board)
     {
+      Console.WriteLine("Se ejecuto");
       int backRow = blancas ? 7 : 0;
       int shortRookCol = 7;
       int longRookCol = 0;
@@ -1035,12 +1033,24 @@ namespace ParalelLocalChess
       Position ShortRookPos = new(GetFormat(backRow, shortRookCol));
       Position KingPos = new(GetFormat(backRow, kingCol));
 
-      if(King!=KingPos.GetPieceAtPosition(chessBoard))
+      if(King!=KingPos.GetPieceAtPosition(Board))
         AllowLongCastle = AllowShortCastle = false;
-      if(Rook!=ShortRookPos.GetPieceAtPosition(chessBoard))
+      if(Rook!=ShortRookPos.GetPieceAtPosition(Board))
         AllowShortCastle = false;
-      if(Rook!=LongRookPos.GetPieceAtPosition(chessBoard)) 
+      if(Rook!=LongRookPos.GetPieceAtPosition(Board)) 
         AllowLongCastle = false;
+
+      Console.WriteLine(KingPos.GetPieceAtPosition(Board));
+      Console.WriteLine(KingPos);
+      Console.WriteLine(ShortRookPos.GetPieceAtPosition(Board));
+      Console.WriteLine(ShortRookPos);
+      Console.WriteLine(LongRookPos.GetPieceAtPosition(Board));
+      Console.WriteLine(LongRookPos);
+
+      foreach (string s in  Board.ToList())
+      {
+        Console.WriteLine(s);
+      }
 
       Console.WriteLine($"Se puede hacer Long Castle?: {AllowLongCastle}");
       Console.WriteLine($"Se puede hacer Short Castle?: {AllowShortCastle}");
