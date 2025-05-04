@@ -1,4 +1,6 @@
-﻿Cuando el programa le pida ingresar alguna jugada, usted puede ingresar las siguientes palabras para realizar un efecto especial:
+﻿Para acceder al juego, habra la carpeta 'Build' y dirijase al archivo LocalParalelChess.exe
+
+Cuando el programa le pida ingresar alguna jugada, usted puede ingresar las siguientes palabras para realizar un efecto especial:
 
 -close : Cierra la partida
 -reset : Resetea el tablero a un estado inicial y cierra la partida

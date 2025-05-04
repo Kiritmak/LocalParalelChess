@@ -231,7 +231,7 @@ namespace ParalelLocalChess
 
   public static class Program
   {
-    static Dictionary<string, Func<ChessBoard, int>> SpecialComands = new();
+    static Dictionary<string, Func<ChessBoard,bool, int>> SpecialComands = new();
 
     static string ExectuableFilepath = Environment.CurrentDirectory;
     static string ColorDataFilepath = @$"{ExectuableFilepath}\..\TextFiles\ColorData.txt";
@@ -256,15 +256,15 @@ namespace ParalelLocalChess
       }
       else
       {
-        SpecialComands["close"] = (chessBoard) =>
+        SpecialComands["close"] = (chessBoard, blancas) =>
         {
           SaveChessBoard(chessBoard);
           return -1;
         };
-        SpecialComands["reset"] = (chessBoard) =>
+        SpecialComands["reset"] = (chessBoard, blancas) =>
         {
           chessBoard = new();
-          return SpecialComands["close"](chessBoard);
+          return SpecialComands["close"](chessBoard, blancas);
         };
         Thread MainThread = new(new ThreadStart(WelcomePlayer));
         MainThread.Name = args[0];
@@ -314,7 +314,7 @@ namespace ParalelLocalChess
       string color = blancas ? "blancas" : "negras";
       Position[] positions = new Position[2];
       ChessBoard chessBoard = new ChessBoard();
-      SpecialComands["short castle"] = (Board) =>
+      SpecialComands["short castle"] = (Board, blancas) =>
       {
         ChessBoard aux = Board.Clone();
 
@@ -359,7 +359,7 @@ namespace ParalelLocalChess
         chessBoard = aux.Clone();
         return 2;
       };
-      SpecialComands["long castle"] = (Board) =>
+      SpecialComands["long castle"] = (Board, blancas) =>
       {
         ChessBoard aux = Board.Clone();
 
@@ -404,20 +404,21 @@ namespace ParalelLocalChess
         chessBoard = aux.Clone();
         return 2;
       };
-      SpecialComands["surrender"] = (Board) =>
+      SpecialComands["surrender"] = (Board, x) =>
       {
         for (int i = 0; i < 8; i++)
           for (int j = 0; j < 8; j++)
           {
-            if ((Board[i, j] == 'k' && blancas) || (Board[i, j] == 'K' && !blancas))
+            if ((Board[i, j] == 'k' && x) || (Board[i, j] == 'K' && !x))
             {
               Position pos = new(GetFormat(i, j));
               pos.SetPieceAtPosition(pos.Color, Board);
+              i = 10;
               break;
             }
           }
         chessBoard = Board.Clone();
-        return SpecialComands["reset"](chessBoard);
+        return SpecialComands["close"](chessBoard, x);
       };
       while (true) 
       {
@@ -681,7 +682,7 @@ namespace ParalelLocalChess
           ChessBoard aux = chessBoard.Clone();
           string moove = Console.ReadLine();
           if (SpecialComands.ContainsKey(moove.ToLower()))
-            return SpecialComands[moove.ToLower()](chessBoard);
+            return SpecialComands[moove.ToLower()](chessBoard, blancas);
           string[] Positions = moove.Split("=>");
           if (Positions.Count() != 2) throw new Exception();
           positions[0] = new Position(Positions[0]);
