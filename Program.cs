@@ -80,7 +80,6 @@ namespace ParalelLocalChess
         //Avanzar dos casillas
         if ( (mult == 1 && this.TextRow == 2) || (mult==-1 && this.TextRow == 7))
         {
-          Console.WriteLine("Peon se quiere mover dos casillas");
           try 
           {
             char passedC = mult == 1 ? 'x' : 'X';
@@ -96,7 +95,6 @@ namespace ParalelLocalChess
 
             if(newPos1.GetPieceAtPosition(chessBoard) == '?' && target.Equals(newPos2))
             {
-              Console.WriteLine("El peon se ha pasado");
               newPos1.SetPieceAtPosition(passedC, chessBoard);
               return -1;
             }
@@ -799,6 +797,28 @@ namespace ParalelLocalChess
             if(piece == 'P')
             {
               int mult = blancas ? 1 : -1;
+              ChessBoard aux = chessBoard.Clone();
+
+              for (int k = 0; k < 4; k++)
+              {
+                nextRow = i + startPos.DeltaPiece[piece][0, k]*mult;
+                nextCol = j + startPos.DeltaPiece[piece][1, k]*mult;
+                try
+                {
+                  Position nextPos = new(GetFormat(nextRow, nextCol));
+                  char targetPiece = nextPos.GetPieceAtPosition(chessBoard);
+                  if (nextPos.Equals(startPos)) throw new Exception();
+                  else if (isCharEmpty(targetPiece) && SameColor(startPos, nextPos, chessBoard)) throw new Exception();
+                  if (startPos.CanMooveTo(nextPos, aux) != 0)
+                  {
+                    string transition = $"{startPos.TextColumn}{startPos.TextRow}=>{nextPos.TextColumn}{nextPos.TextRow}";
+                    mooves.Add(transition);
+                    Console.WriteLine(transition);
+                  }
+                }
+                catch { }
+              }
+
             }
             //Moviendo una Caballo o a un rey
             else if(piece == 'C' || piece == 'K')
@@ -844,7 +864,6 @@ namespace ParalelLocalChess
                     {
                       string transition = $"{startPos.TextColumn}{startPos.TextRow}=>{nextPos.TextColumn}{nextPos.TextRow}";
                       mooves.Add(transition);
-                      Console.WriteLine(transition);
                     }
                     else if (!isCharEmpty(targetPiece)) break;
                     steps++;
