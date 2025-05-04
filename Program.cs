@@ -404,6 +404,21 @@ namespace ParalelLocalChess
         chessBoard = aux.Clone();
         return 2;
       };
+      SpecialComands["surrender"] = (Board) =>
+      {
+        for (int i = 0; i < 8; i++)
+          for (int j = 0; j < 8; j++)
+          {
+            if ((Board[i, j] == 'k' && blancas) || (Board[i, j] == 'K' && !blancas))
+            {
+              Position pos = new(GetFormat(i, j));
+              pos.SetPieceAtPosition(pos.Color, Board);
+              break;
+            }
+          }
+        chessBoard = Board.Clone();
+        return SpecialComands["reset"](chessBoard);
+      };
       while (true) 
       {
         Println(playerName, "Esperando para elejir...");
