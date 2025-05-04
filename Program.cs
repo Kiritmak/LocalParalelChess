@@ -238,6 +238,8 @@ namespace ParalelLocalChess
     static string chessBoardFilepath = @$"{ExectuableFilepath}\..\TextFiles\ChessBoard.txt";
     static string? playerName;
     static bool hasAPassedPawn = false;
+    static bool AllowShortCastle = true;
+    static bool AllowLongCastle = true;
 
     private static Semaphore SalaDeEspera = new(2, 2, "SalaDeEspera");
     private static Mutex game = new(false, "ChessGame");
@@ -312,13 +314,103 @@ namespace ParalelLocalChess
       string color = blancas ? "blancas" : "negras";
       Position[] positions = new Position[2];
       ChessBoard chessBoard = new ChessBoard();
+      SpecialComands["short castle"] = (Board) =>
+      {
+        ChessBoard aux = Board.Clone();
 
-      while(true) 
+        //Comprobar que el rey no este en jaque antes del castle
+        if (KingIsChecked(blancas, Board))
+          throw new Exception();
+        Console.WriteLine("El rey no esta en jaque antes del movimiento");
+
+        if (AllowShortCastle)
+        {
+          int StartingKingRow = blancas ? 7 : 0;
+          int StartingKingCol = 4;
+          int KingSideRookRow = blancas ? 7 : 0;
+          int KingSideCol = 7;
+
+          Position KingPos = new(GetFormat(StartingKingRow, StartingKingCol));
+          Position RookPos = new(GetFormat(KingSideRookRow, KingSideCol));
+
+          Console.WriteLine(KingPos);
+          Console.WriteLine(RookPos);
+
+          for (int i = 5; i <= 6; i++)
+            if (isCharEmpty(Board[StartingKingRow, i]))
+              throw new Exception();
+          Console.WriteLine("No habian piezas por el medio");
+
+          aux[KingSideRookRow, 5] = RookPos.GetPieceAtPosition(Board);
+          aux[KingSideRookRow, 6] = KingPos.GetPieceAtPosition(Board);
+          KingPos.SetPieceAtPosition(KingPos.Color, aux);
+          RookPos.SetPieceAtPosition(RookPos.Color, aux);
+        }
+        else throw new Exception();
+
+        Console.WriteLine("El movimiento estaba permitido");
+
+        //Comprobar que el rey no este en jaque despues del castle
+        if (KingIsChecked(blancas, aux))
+          throw new Exception();
+        Console.WriteLine("El rey no esta en jaque despues del movimiento");
+
+        //Aceptar el castling
+        chessBoard = aux.Clone();
+        return 2;
+      };
+      SpecialComands["long castle"] = (Board) =>
+      {
+        ChessBoard aux = Board.Clone();
+
+        //Comprobar que el rey no este en jaque antes del castle
+        if (KingIsChecked(blancas, Board))
+          throw new Exception();
+        Console.WriteLine("El rey no esta en jaque antes del movimiento");
+
+        if (AllowLongCastle)
+        {
+          int StartingKingRow = blancas ? 7 : 0;
+          int StartingKingCol = 4;
+          int KingSideRookRow = blancas ? 7 : 0;
+          int KingSideCol = 0;
+
+          Position KingPos = new(GetFormat(StartingKingRow, StartingKingCol));
+          Position RookPos = new(GetFormat(KingSideRookRow, KingSideCol));
+
+          Console.WriteLine(KingPos);
+          Console.WriteLine(RookPos);
+
+          for (int i = 1; i <= 3; i++)
+            if (isCharEmpty(Board[StartingKingRow, i]))
+          throw new Exception();
+          Console.WriteLine("No habian piezas por el medio");
+
+          aux[KingSideRookRow, 3] = RookPos.GetPieceAtPosition(Board);
+          aux[KingSideRookRow, 2] = KingPos.GetPieceAtPosition(Board);
+          KingPos.SetPieceAtPosition(KingPos.Color, aux);
+          RookPos.SetPieceAtPosition(RookPos.Color, aux);
+        }
+        else throw new Exception();
+
+        Console.WriteLine("El movimiento estaba permitido");
+
+        //Comprobar que el rey no este en jaque despues del castle
+        if (KingIsChecked(blancas, aux))
+          throw new Exception();
+        Console.WriteLine("El rey no esta en jaque despues del movimiento");
+
+        //Aceptar el castling
+        chessBoard = aux.Clone();
+        return 2;
+      };
+      while (true) 
       {
         Println(playerName, "Esperando para elejir...");
         game.WaitOne();
         Println(playerName, "Es tu turno");
 
+        CheckCastle(blancas, chessBoard); 
         if(hasAPassedPawn) RemovePassedPawn(blancas);
         GetChessBoard(chessBoard);
         int w = Win(blancas, chessBoard);
@@ -576,10 +668,8 @@ namespace ParalelLocalChess
         {
           ChessBoard aux = chessBoard.Clone();
           string moove = Console.ReadLine();
-          if(SpecialComands.ContainsKey(moove.ToLower()))
-          {
+          if (SpecialComands.ContainsKey(moove.ToLower()))
             return SpecialComands[moove.ToLower()](chessBoard);
-          }
           string[] Positions = moove.Split("=>");
           if (Positions.Count() != 2) throw new Exception();
           positions[0] = new Position(Positions[0]);
@@ -931,6 +1021,29 @@ namespace ParalelLocalChess
     public static bool isCharEmpty(char c)
     {
       return c == '?' || char.ToLower(c) == 'x';
+    }
+    static void CheckCastle(bool blancas, ChessBoard chessBoard)
+    {
+      int backRow = blancas ? 7 : 0;
+      int shortRookCol = 7;
+      int longRookCol = 0;
+      int kingCol = 4;
+      char King = blancas ? 'k' : 'K';
+      char Rook = blancas ? 't' : 'T';
+
+      Position LongRookPos = new(GetFormat(backRow, longRookCol));
+      Position ShortRookPos = new(GetFormat(backRow, shortRookCol));
+      Position KingPos = new(GetFormat(backRow, kingCol));
+
+      if(King!=KingPos.GetPieceAtPosition(chessBoard))
+        AllowLongCastle = AllowShortCastle = false;
+      if(Rook!=ShortRookPos.GetPieceAtPosition(chessBoard))
+        AllowShortCastle = false;
+      if(Rook!=LongRookPos.GetPieceAtPosition(chessBoard)) 
+        AllowLongCastle = false;
+
+      Console.WriteLine($"Se puede hacer Long Castle?: {AllowLongCastle}");
+      Console.WriteLine($"Se puede hacer Short Castle?: {AllowShortCastle}");
     }
   }
 
