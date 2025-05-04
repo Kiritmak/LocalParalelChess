@@ -244,7 +244,15 @@ namespace ParalelLocalChess
     private static Mutex ColorSelection = new(false, "Color");
     static void Main(string[] args)
     {
-      try
+      if (args.Count() != 1)
+      {
+        Console.WriteLine("Ingresa tu nombre!");
+        string? name = "";
+        while(string.IsNullOrEmpty(name)) name = Console.ReadLine();
+        args = new string[] { name };
+        Main(args);
+      }
+      else
       {
         SpecialComands["close"] = (chessBoard) =>
         {
@@ -261,18 +269,17 @@ namespace ParalelLocalChess
         playerName = MainThread.Name;
         MainThread.Start();
       }
-      catch (Exception e)
-      {
-        Console.WriteLine(e);
-        Console.Read();
-        return;
-      }
     }
     static void WelcomePlayer()
     {
       string? playerName = Thread.CurrentThread.Name;
 
-      Console.WriteLine($"Welcome to Paralel Chess {playerName}!\nA game where you can play chess with your friend at separated windows in the same computer!\n");
+      Console.WriteLine($"Bienvenido a Paralel Chess {playerName}!\nUn juego de ajedrez en donde juegas con tu amigo en ventanas separadas!\n");
+      Console.WriteLine("Cada celda en un tablero de ajedrez tiene unas coordenadas\nPor ejemplo: e4, a6, b8, h2");
+      Console.WriteLine("Para realizar un movimiento, escribe las coordenadas de la celda inicial, seguido de una felcha \"=>\", y luego las otras coordenadas");
+      Console.WriteLine("Por ejemplo: e4=>e5, a6=>c4");
+      Console.WriteLine("Para jugar con tu amigo, abre otro ejecutable del juego");
+      Console.WriteLine("Dicho esto, espero que disfrutes del juego!");
       while (Exit())
       {
         Println(playerName, "Esta esperando para entrar a la sala...");
@@ -350,20 +357,12 @@ namespace ParalelLocalChess
     }
     static bool Exit()
     {
-      Console.WriteLine("Type 1 to enter to the game, type anything else to exit the game");
+      Console.WriteLine("Escribe 1 para empezar un juego, cualquier otra entrada cerrara el programa");
       while(true)
       {
-        int option;
-        try
-        {
-          option = int.Parse(Console.ReadLine());
-        }
-        catch
-        {
-          Console.WriteLine("Incorrect Format");
-          continue;
-        }
-        return option == 1;
+        string? option;
+        option = Console.ReadLine();
+        return option == "1";
       }
     }
     static void Println(string? name, string message) =>
