@@ -233,8 +233,9 @@ namespace ParalelLocalChess
   {
     static Dictionary<string, Func<ChessBoard, int>> SpecialComands = new();
 
-    static string ColorDataFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ColorData.txt";
-    static string chessBoardFilepath = @"E:\Code\C#\LocalParalelChess\TextFiles\ChessBoard.txt";
+    static string ExectuableFilepath = Environment.CurrentDirectory;
+    static string ColorDataFilepath = @$"{ExectuableFilepath}\..\TextFiles\ColorData.txt";
+    static string chessBoardFilepath = @$"{ExectuableFilepath}\..\TextFiles\ChessBoard.txt";
     static string? playerName;
     static bool hasAPassedPawn = false;
 
@@ -243,22 +244,30 @@ namespace ParalelLocalChess
     private static Mutex ColorSelection = new(false, "Color");
     static void Main(string[] args)
     {
-      SpecialComands["close"] = (chessBoard) =>
+      try
       {
-        SaveChessBoard(chessBoard);
-        return -1;
-      };
-      SpecialComands["reset"] = (chessBoard) =>
+        SpecialComands["close"] = (chessBoard) =>
+        {
+          SaveChessBoard(chessBoard);
+          return -1;
+        };
+        SpecialComands["reset"] = (chessBoard) =>
+        {
+          chessBoard = new();
+          return SpecialComands["close"](chessBoard);
+        };
+        Thread MainThread = new(new ThreadStart(WelcomePlayer));
+        MainThread.Name = args[0];
+        playerName = MainThread.Name;
+        MainThread.Start();
+      }
+      catch (Exception e)
       {
-        chessBoard = new();
-        return SpecialComands["close"](chessBoard);
-      };
-      Thread MainThread = new(new ThreadStart(WelcomePlayer));
-      MainThread.Name = args[0];
-      playerName = MainThread.Name;
-      MainThread.Start();
+        Console.WriteLine(e);
+        Console.Read();
+        return;
+      }
     }
-
     static void WelcomePlayer()
     {
       string? playerName = Thread.CurrentThread.Name;
