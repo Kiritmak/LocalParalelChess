@@ -139,7 +139,6 @@ namespace ParalelLocalChess
       else
       {
         pieza = char.ToUpper(pieza);
-        Console.WriteLine($"Analizando {pieza}");
         for (int i = 0; i < DeltaPiece[pieza].GetLength(1); i++)
         {
           int k = 1;
@@ -151,7 +150,6 @@ namespace ParalelLocalChess
             try
             {
               Position newPos = new(s);
-              Console.WriteLine(newPos);
               if (newPos.Equals(target)) return 1;
               else if (newPos.GetPieceAtPosition(chessBoard) != '?') break;
               k++;
@@ -819,7 +817,6 @@ namespace ParalelLocalChess
                   {
                     string transition = $"{startPos.TextColumn}{startPos.TextRow}=>{nextPos.TextColumn}{nextPos.TextRow}";
                     mooves.Add(transition);
-                      Console.WriteLine(transition);
                   }
                 }
                 catch { }
@@ -828,7 +825,33 @@ namespace ParalelLocalChess
             //Moviendo a otra pieza
             else
             {
+              for(int k=0; k < startPos.DeltaPiece[piece].GetLength(1); k++)
+              {
+                int steps = 1;
+                while(true)
+                {
+                  nextRow = i + startPos.DeltaPiece[piece][0, k]*steps;
+                  nextCol = j + startPos.DeltaPiece[piece][1, k]*steps;
+                  try
+                  {
+                    Position nextPos = new(GetFormat(nextRow, nextCol));
+                    char targetPiece = nextPos.GetPieceAtPosition(chessBoard);
 
+                    if (nextPos.Equals(startPos)) throw new Exception();
+                    else if (!isCharEmpty(targetPiece) && SameColor(startPos, nextPos, chessBoard)) throw new Exception();
+
+                    if (startPos.CanMooveTo(nextPos, chessBoard) != 0)
+                    {
+                      string transition = $"{startPos.TextColumn}{startPos.TextRow}=>{nextPos.TextColumn}{nextPos.TextRow}";
+                      mooves.Add(transition);
+                      Console.WriteLine(transition);
+                    }
+                    else if (!isCharEmpty(targetPiece)) break;
+                    steps++;
+                  }
+                  catch { break;  }
+                }
+              }
             }
           }
         }
@@ -842,8 +865,12 @@ namespace ParalelLocalChess
     static bool SameColor(Position p1, Position p2, ChessBoard chessBoard) 
     {
       char c1 = p1.GetPieceAtPosition(chessBoard);
-      char c2 = p1.GetPieceAtPosition(chessBoard);
+      char c2 = p2.GetPieceAtPosition(chessBoard);
       return char.IsAsciiLetterLower(c1) == char.IsAsciiLetterLower(c2);
+    }
+    static bool isCharEmpty(char c)
+    {
+      return c == '?' || char.ToLower(c) == 'x';
     }
   }
 
