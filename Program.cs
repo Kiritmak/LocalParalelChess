@@ -185,7 +185,7 @@ namespace ParalelLocalChess
         char[] chars = new char[8];
         for (int j = 0; j < 8; j++)
         {
-          chars[j] = (i + j) % 2 == 0 ? 'W' : 'B';
+          chars[j] = (i + j) % 2 == 0 ? 'B' : 'W';
         }
         chessBoard.Add(chars);
       }
