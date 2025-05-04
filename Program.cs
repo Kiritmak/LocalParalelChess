@@ -1,7 +1,9 @@
 ﻿using System.Collections;
+using static ParalelLocalChess.Program;
 using System.Drawing;
 using System.Text;
 using ParalelLocalChess;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ParalelLocalChess
 {
@@ -93,7 +95,7 @@ namespace ParalelLocalChess
             s = $"{(char)('A' + newColumn)}{7 - newRow + 1}";
             Position newPos2 = new Position(s);
 
-            if(newPos1.GetPieceAtPosition(chessBoard) == '?' && target.Equals(newPos2))
+            if(newPos1.GetPieceAtPosition(chessBoard) == '?' && target.Equals(newPos2) && isCharEmpty(newPos2.GetPieceAtPosition(chessBoard)))
             {
               newPos1.SetPieceAtPosition(passedC, chessBoard);
               return -1;
@@ -227,7 +229,7 @@ namespace ParalelLocalChess
     }
   }
 
-  static class Program
+  public static class Program
   {
     static Dictionary<string, Func<ChessBoard, int>> SpecialComands = new();
 
@@ -251,7 +253,6 @@ namespace ParalelLocalChess
         chessBoard = new();
         return SpecialComands["close"](chessBoard);
       };
-
       Thread MainThread = new(new ThreadStart(WelcomePlayer));
       MainThread.Name = args[0];
       playerName = MainThread.Name;
@@ -286,9 +287,6 @@ namespace ParalelLocalChess
         Println(playerName, "Ha elejido un color");
         ColorSelection.ReleaseMutex();
         Play(Blancas[1] == playerName);
-        text[0] = "Blancas";
-        text[1] = "Negras";
-        File.WriteAllLines (ColorDataFilepath, text);
         Console.WriteLine($"{playerName} Ha salido de la sala");
         SalaDeEspera.Release();
       }
@@ -307,10 +305,20 @@ namespace ParalelLocalChess
 
         if(hasAPassedPawn) RemovePassedPawn(blancas);
         GetChessBoard(chessBoard);
-        if (Win(blancas, chessBoard) != -1) //Comprobando si esta en jaque mate algun rey
+        int w = Win(blancas, chessBoard);
+        if ( w != -1) //Comprobando si esta en jaque mate algun rey
         {
+          List<string> text = File.ReadAllLines(ColorDataFilepath).ToList();
+          if((!blancas && w==1) || (blancas && w == 0))
+          {
+            chessBoard = new ChessBoard();
+            text[0] = "Blancas";
+            text[1] = "Negras";
+            File.WriteAllLines(ColorDataFilepath, text);
+            File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
+          }
           game.ReleaseMutex();
-          break; 
+          break;
         }
         showChessBoard(chessBoard, blancas);
 
@@ -384,18 +392,28 @@ namespace ParalelLocalChess
       {
         //Comprobando si el rey blanco esta en jaque, y si las blancas pueden hacer algun movimiento que lo saque del jaque
         bool WhiteChecked = KingIsChecked(true, chessBoard);
-        List<string> mooves = GetAllPossibleMooves(true, chessBoard);
-        if (WhiteChecked)
+
+        if (Brow == -1) result = 0; 
+        else if (WhiteChecked)
         {
+          List<string> mooves = GetAllPossibleMooves(true, chessBoard);
           if (mooves.Count > 0)
           {
-            foreach (string transition in mooves)
+            for(int i=0; i<mooves.Count;i++)
             {
+              string transition = mooves[i];
               ChessBoard aux = chessBoard.Clone();
               if (KingSafeAfterTransition(blancas, aux, transition))
               {
+                Console.WriteLine(transition);
                 result = -1;
                 break;
+              }
+              if (i == mooves.Count - 1)
+              {
+                result = 1;
+                chessBoard[Wrow, Wcol] = (new Position(GetFormat(Wrow, Wcol))).Color;
+                File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
               }
             }
           }
@@ -403,42 +421,51 @@ namespace ParalelLocalChess
           {
             result = 1;
             chessBoard[Wrow, Wcol] = (new Position(GetFormat(Wrow, Wcol))).Color;
+            File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
           }
         }
-        else if (Brow == -1) result = 0;
       }
       else
       {
         //Comprobando si el rey negro esta en jaque, y si las negras pueden hacer algun movimiento que lo saque del jaque
 
         bool BlackChecked = KingIsChecked(false, chessBoard);
-        List<string> mooves = GetAllPossibleMooves(false, chessBoard);
 
-        if (BlackChecked)
+        if (Wrow == -1) result = 1;
+        else if (BlackChecked)
         {
+          List<string> mooves = GetAllPossibleMooves(false, chessBoard);
           if (mooves.Count > 0)
           {
-            foreach (string transition in mooves)
+            for (int i = 0; i < mooves.Count; i++)
             {
+              string transition = mooves[i];
               ChessBoard aux = chessBoard.Clone();
               if (KingSafeAfterTransition(blancas, aux, transition))
               {
+                Console.WriteLine(transition);
                 result = -1;
                 break;
               }
+              if (i == mooves.Count - 1)
+              {
+                result = 0;
+                chessBoard[Brow, Bcol] = (new Position(GetFormat(Brow, Bcol))).Color;
+                File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
+              }
             }
           }
-          else result = 0;
+          else
+          {
+            result = 0;
+            chessBoard[Brow, Bcol] = (new Position(GetFormat(Brow, Bcol))).Color;
+            File.WriteAllLines(chessBoardFilepath, chessBoard.ToList());
+          }
         }
-        else if(Wrow == -1) result = 1;
+
       }
 
       #region Retornando el resultado 
-      if (result!=-1) //Reseting the board to original state
-      {
-        ChessBoard xd = new();
-        File.WriteAllLines(chessBoardFilepath, xd.ToList());
-      }
       if (result == 0)
       {
         if (blancas) Println(playerName, "Ha ganado. Felicidades");
@@ -813,7 +840,6 @@ namespace ParalelLocalChess
                   {
                     string transition = $"{startPos.TextColumn}{startPos.TextRow}=>{nextPos.TextColumn}{nextPos.TextRow}";
                     mooves.Add(transition);
-                    Console.WriteLine(transition);
                   }
                 }
                 catch { }
@@ -874,20 +900,27 @@ namespace ParalelLocalChess
             }
           }
         }
+      /*
+      foreach(string moove in mooves)
+        Console.WriteLine(moove);
+      */
       return mooves;
     }
     static bool KingSafeAfterTransition(bool blancas, ChessBoard aux, string transition)
     {
-      return true;
+      string[] s = transition.Split("=>");
+      Position[] positions = [new(s[0]), new(s[1])];
+      positions[1].SetPieceAtPosition(positions[0].GetPieceAtPosition(aux), aux);
+      positions[0].SetPieceAtPosition(positions[0].Color, aux);
+      return !KingIsChecked(blancas, aux);
     }
-
     static bool SameColor(Position p1, Position p2, ChessBoard chessBoard) 
     {
       char c1 = p1.GetPieceAtPosition(chessBoard);
       char c2 = p2.GetPieceAtPosition(chessBoard);
       return char.IsAsciiLetterLower(c1) == char.IsAsciiLetterLower(c2);
     }
-    static bool isCharEmpty(char c)
+    public static bool isCharEmpty(char c)
     {
       return c == '?' || char.ToLower(c) == 'x';
     }
